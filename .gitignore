@@ -15,6 +15,7 @@ backend/_debug_*.py
 # node
 node_modules/
 dist/
+*.tsbuildinfo
 frontend/_e2e.png
 frontend/_test-browser.mjs
 
