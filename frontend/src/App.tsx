@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { AnimatePresence, motion } from "framer-motion";
 import { streamSSE } from "./sse";
 import { WeatherCard } from "./WeatherCard";
 import type { Message, UiEvent } from "./types";
@@ -217,7 +218,13 @@ function formatTime(ts: number): string {
 function Bubble({ msg }: { msg: Message }) {
   const isUser = msg.role === "user";
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className={`flex ${isUser ? "justify-end" : "justify-start"}`}
+    >
       <div
         className={`flex flex-col gap-1 ${
           isUser ? "max-w-[75%] items-end" : "w-full max-w-md items-start"
@@ -234,7 +241,20 @@ function Bubble({ msg }: { msg: Message }) {
           {msg.pending && !msg.text ? (
             <div className="flex items-center gap-2 text-slate-400">
               <TypingDots />
-              {msg.status && <span className="text-xs italic">{msg.status}…</span>}
+              <AnimatePresence mode="wait">
+                {msg.status && (
+                  <motion.span
+                    key={msg.status}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.18 }}
+                    className="text-xs italic"
+                  >
+                    {msg.status}…
+                  </motion.span>
+                )}
+              </AnimatePresence>
             </div>
           ) : isUser ? (
             <div className="whitespace-pre-wrap">{msg.text}</div>
@@ -248,10 +268,20 @@ function Bubble({ msg }: { msg: Message }) {
         </div>
 
         {msg.uiEvents.map((ev, i) =>
-          ev.type === "weather_card" ? <WeatherCard key={i} data={ev.payload} /> : null
+          ev.type === "weather_card" ? (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, scale: 0.96, y: 6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="w-full"
+            >
+              <WeatherCard data={ev.payload} />
+            </motion.div>
+          ) : null
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
