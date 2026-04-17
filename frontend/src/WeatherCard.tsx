@@ -89,11 +89,11 @@ export function WeatherCard({ data }: { data: WeatherPayload }) {
 function Chip({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
     <div className="min-w-0 rounded-xl bg-white/[0.04] px-2.5 py-2 ring-1 ring-white/10">
-      <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-slate-400">
-        <span aria-hidden className="shrink-0">{icon}</span>
-        <span className="truncate">{label}</span>
+      <div className="text-[10px] uppercase leading-tight tracking-wide text-slate-400">
+        <span aria-hidden className="mr-1">{icon}</span>
+        {label}
       </div>
-      <div className="mt-0.5 truncate text-sm font-medium text-slate-100">{value}</div>
+      <div className="mt-1 truncate text-sm font-medium text-slate-100">{value}</div>
     </div>
   );
 }

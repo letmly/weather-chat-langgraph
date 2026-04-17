@@ -178,7 +178,11 @@ async def stream_chat(message: str, thread_id: str) -> AsyncIterator[dict]:
         kind = event["event"]
         name = event.get("name")
 
-        if kind == "on_tool_end" and name == "get_weather":
+        if kind == "on_tool_start" and name == "get_weather":
+            city = (event["data"].get("input") or {}).get("city", "")
+            yield {"type": "status", "data": f"запрашиваю погоду в {city}" if city else "запрашиваю погоду"}
+
+        elif kind == "on_tool_end" and name == "get_weather":
             raw = event["data"].get("output")
             payload = raw.content if hasattr(raw, "content") else raw
             try:
@@ -191,6 +195,7 @@ async def stream_chat(message: str, thread_id: str) -> AsyncIterator[dict]:
                     "type": "ui_event",
                     "data": {"type": "weather_card", "payload": parsed},
                 }
+                yield {"type": "status", "data": "формирую ответ"}
 
         elif kind == "on_chat_model_stream":
             chunk: AIMessageChunk = event["data"]["chunk"]
