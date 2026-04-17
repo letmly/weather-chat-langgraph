@@ -45,12 +45,7 @@ export function WeatherCard({ data }: { data: WeatherPayload }) {
       <div
         className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradient} p-4 text-white shadow-lg ring-1 ring-white/10 sm:p-5`}
       >
-        <img
-          src={iconUrl}
-          alt=""
-          aria-hidden
-          className="pointer-events-none absolute -right-4 -top-4 h-32 w-32 opacity-90 drop-shadow-[0_0_12px_rgba(255,255,255,0.35)] sm:h-40 sm:w-40"
-        />
+        <WeatherGlyph icon={data.icon} iconUrl={iconUrl} />
 
         <div className="relative flex items-start justify-between gap-2">
           <div className="truncate text-sm font-medium opacity-90">
@@ -83,6 +78,43 @@ export function WeatherCard({ data }: { data: WeatherPayload }) {
         />
       </div>
     </div>
+  );
+}
+
+function WeatherGlyph({ icon, iconUrl }: { icon: string; iconUrl: string }) {
+  const base =
+    "pointer-events-none absolute -right-4 -top-4 h-32 w-32 sm:h-40 sm:w-40";
+
+  // Ясная ночь: OWM отдаёт блёклую заготовку, рисуем свою яркую луну.
+  if (icon === "01n") {
+    return (
+      <svg
+        aria-hidden
+        viewBox="0 0 64 64"
+        className={`${base} drop-shadow-[0_0_16px_rgba(255,235,160,0.55)]`}
+      >
+        <defs>
+          <radialGradient id="moon" cx="38%" cy="38%" r="60%">
+            <stop offset="0%" stopColor="#fff7d6" />
+            <stop offset="70%" stopColor="#ffe08a" />
+            <stop offset="100%" stopColor="#e6b84a" />
+          </radialGradient>
+        </defs>
+        <circle cx="32" cy="32" r="18" fill="url(#moon)" />
+        <circle cx="27" cy="28" r="2.4" fill="#d9a535" opacity="0.45" />
+        <circle cx="37" cy="35" r="1.8" fill="#d9a535" opacity="0.4" />
+        <circle cx="30" cy="38" r="1.2" fill="#d9a535" opacity="0.35" />
+      </svg>
+    );
+  }
+
+  return (
+    <img
+      src={iconUrl}
+      alt=""
+      aria-hidden
+      className={`${base} opacity-90 drop-shadow-[0_0_12px_rgba(255,255,255,0.35)]`}
+    />
   );
 }
 
