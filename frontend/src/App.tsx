@@ -144,10 +144,7 @@ export default function App() {
   return (
     <div className="mx-auto flex h-full max-w-2xl flex-col px-4">
       <header className="flex items-center justify-between py-4">
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight">Weather Chat</h1>
-          <p className="text-xs text-slate-500">LangGraph · FastAPI · SSE</p>
-        </div>
+        <h1 className="text-lg font-semibold tracking-tight">Weather Chat</h1>
         <button
           onClick={async () => {
             const tid = threadIdRef.current;
