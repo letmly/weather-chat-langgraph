@@ -221,7 +221,11 @@ function Bubble({ msg }: { msg: Message }) {
   const isUser = msg.role === "user";
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
-      <div className={`flex max-w-[75%] flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}>
+      <div
+        className={`flex flex-col gap-1 ${
+          isUser ? "max-w-[75%] items-end" : "w-full max-w-md items-start"
+        }`}
+      >
         <div
           className={
             "text-sm leading-relaxed " +

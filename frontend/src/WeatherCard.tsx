@@ -73,7 +73,7 @@ export function WeatherCard({ data }: { data: WeatherPayload }) {
         </div>
       </div>
 
-      <div className="mt-2 grid grid-cols-3 gap-2">
+      <div className="mt-2 grid grid-cols-[repeat(auto-fit,minmax(5.5rem,1fr))] gap-2">
         <Chip icon="💨" label="Ветер" value={`${data.wind} м/с`} />
         <Chip icon="💧" label="Влажность" value={`${data.humidity}%`} />
         <Chip
@@ -88,12 +88,12 @@ export function WeatherCard({ data }: { data: WeatherPayload }) {
 
 function Chip({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
-    <div className="min-w-0 rounded-xl bg-white/[0.04] px-2.5 py-2 ring-1 ring-white/10">
-      <div className="text-[10px] uppercase leading-tight tracking-wide text-slate-400">
-        <span aria-hidden className="mr-1">{icon}</span>
-        {label}
+    <div className="min-w-0 rounded-xl bg-white/[0.04] px-3 py-2 ring-1 ring-white/10">
+      <div className="flex items-center gap-1 text-[10px] uppercase leading-tight tracking-wide text-slate-400">
+        <span aria-hidden className="shrink-0">{icon}</span>
+        <span className="break-words">{label}</span>
       </div>
-      <div className="mt-1 truncate text-sm font-medium text-slate-100">{value}</div>
+      <div className="mt-1 text-sm font-medium text-slate-100">{value}</div>
     </div>
   );
 }
