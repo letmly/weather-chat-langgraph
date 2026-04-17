@@ -17,6 +17,7 @@ export default function App() {
   const threadIdRef = useRef<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const autoScrollRef = useRef(true);
 
   useEffect(() => {
     const saved = localStorage.getItem(THREAD_KEY);
@@ -42,7 +43,21 @@ export default function App() {
     })();
   }, []);
 
+  // Автоскролл только если пользователь уже у низа. Если он проскроллил
+  // наверх читать предыдущие — новые токены не утаскивают его вниз.
   useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const dist = el.scrollHeight - el.scrollTop - el.clientHeight;
+      autoScrollRef.current = dist < 80;
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!autoScrollRef.current) return;
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
@@ -76,6 +91,7 @@ export default function App() {
       pending: true,
       createdAt: now,
     };
+    autoScrollRef.current = true; // юзер сам отправил — прокручиваем к низу
     setMessages((m) => [...m, userMsg, asstMsg]);
 
     const patchAsst = (fn: (m: Message) => Message) =>
@@ -237,14 +253,14 @@ function Bubble({ msg }: { msg: Message }) {
       >
         <div
           className={
-            "text-sm leading-relaxed " +
+            "relative text-sm leading-relaxed " +
             (isUser
-              ? "rounded-2xl rounded-tr-md bg-sky-500 px-4 py-2.5 text-white shadow-sm"
-              : "rounded-2xl rounded-tl-md bg-white/[0.04] px-4 py-2.5 text-slate-100 ring-1 ring-white/10 backdrop-blur")
+              ? "rounded-2xl rounded-tr-md bg-sky-500 px-3.5 pb-1.5 pt-2 text-white shadow-sm"
+              : "rounded-2xl rounded-tl-md bg-white/[0.04] px-3.5 pb-1.5 pt-2 text-slate-100 ring-1 ring-white/10 backdrop-blur")
           }
         >
           {msg.pending && !msg.text ? (
-            <div className="flex items-center gap-2 text-slate-400">
+            <div className="flex items-center gap-2 py-0.5 text-slate-400">
               <TypingDots />
               <AnimatePresence mode="wait">
                 {msg.status && (
@@ -262,14 +278,22 @@ function Bubble({ msg }: { msg: Message }) {
               </AnimatePresence>
             </div>
           ) : isUser ? (
-            <div className="whitespace-pre-wrap">{msg.text}</div>
+            // Время вклеено в конец текста через float — если строка короткая,
+            // встаёт справа от текста; если длинная — уходит под последнюю строку.
+            <div className="whitespace-pre-wrap">
+              {msg.text}
+              <span className="ml-2 inline-block translate-y-[3px] text-[10px] text-white/70">
+                {formatTime(msg.createdAt)}
+              </span>
+            </div>
           ) : (
-            <MarkdownBody text={msg.text} />
+            <>
+              <MarkdownBody text={msg.text} />
+              <div className="mt-0.5 text-right text-[10px] text-slate-500">
+                {formatTime(msg.createdAt)}
+              </div>
+            </>
           )}
-        </div>
-
-        <div className={`px-1 text-[11px] text-slate-500 ${isUser ? "text-right" : "text-left"}`}>
-          {formatTime(msg.createdAt)}
         </div>
 
         {msg.uiEvents.map((ev, i) =>
