@@ -2,13 +2,18 @@ import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { AnimatePresence, motion } from "framer-motion";
-import { streamSSE } from "./sse";
+import { openSSE } from "./sse";
 import { WeatherCard } from "./WeatherCard";
 import type { Message, UiEvent } from "./types";
 
 const API_BASE = import.meta.env.VITE_API_URL || "";
 const CHAT_URL = API_BASE + "/chat";
+const STREAM_URL = (runId: string, from: number) =>
+  `${API_BASE}/stream/${runId}?from=${from}`;
 const THREAD_KEY = "weather-chat.thread_id";
+const RUN_KEY = "weather-chat.active_run";  // { run_id, asst_id, offset }
+
+type ActiveRun = { run_id: string; asst_id: string; offset: number };
 
 export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -19,28 +24,99 @@ export default function App() {
   const taRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem(THREAD_KEY);
-    if (!saved) return;
-    threadIdRef.current = saved;
+    const savedThread = localStorage.getItem(THREAD_KEY);
+    const savedRun = readActiveRun();
+    if (savedThread) threadIdRef.current = savedThread;
+
     (async () => {
-      try {
-        const r = await fetch(`${API_BASE}/history/${saved}`);
-        if (!r.ok) return;
-        const { messages: hist } = await r.json();
-        if (Array.isArray(hist) && hist.length) {
-          setMessages(
-            hist.map((m: any, i: number) => ({
-              id: m.id ?? `h-${i}`,
-              role: m.role,
-              text: m.text ?? "",
-              uiEvents: m.uiEvents ?? [],
-              createdAt: m.createdAt ?? Date.now() - (hist.length - i) * 1000,
-            }))
-          );
+      // 1) Подтянем историю треда (чекпоинты из SQLite).
+      let hist: any[] = [];
+      if (savedThread) {
+        try {
+          const r = await fetch(`${API_BASE}/history/${savedThread}`);
+          if (r.ok) {
+            const body = await r.json();
+            hist = Array.isArray(body.messages) ? body.messages : [];
+          }
+        } catch {}
+      }
+
+      // 2) Решаем, нужно ли резумить активный ран, ДО рендера истории.
+      const last = hist[hist.length - 1];
+      const alreadyFinalized =
+        !!savedRun && last && last.role === "assistant" && (last.text ?? "").length > 0;
+
+      if (hist.length) {
+        setMessages(
+          hist.map((m: any, i: number) => ({
+            id: m.id ?? `h-${i}`,
+            role: m.role,
+            text: m.text ?? "",
+            uiEvents: m.uiEvents ?? [],
+            createdAt: m.createdAt ?? Date.now() - (hist.length - i) * 1000,
+          }))
+        );
+      }
+
+      if (savedRun) {
+        if (alreadyFinalized) {
+          clearActiveRun();
+        } else {
+          try { await resumeRun(savedRun); }
+          catch { clearActiveRun(); }
         }
-      } catch {}
+      }
     })();
   }, []);
+
+  async function resumeRun(run: ActiveRun) {
+    // Добавим плейсхолдер ассистента (если его ещё нет среди восстановленных
+    // из истории — в большинстве случаев финального AI ещё не случилось).
+    const exists = await new Promise<boolean>((res) => {
+      setMessages((m) => {
+        const has = m.some((x) => x.id === run.asst_id);
+        res(has);
+        return m;
+      });
+    });
+    if (!exists) {
+      setMessages((m) => [
+        ...m,
+        {
+          id: run.asst_id,
+          role: "assistant",
+          text: "",
+          uiEvents: [],
+          pending: true,
+          createdAt: Date.now(),
+          status: "продолжаю…",
+        },
+      ]);
+    }
+    setSending(true);
+    try {
+      await consume(run);
+    } finally {
+      setSending(false);
+      clearActiveRun();
+    }
+  }
+
+  function readActiveRun(): ActiveRun | null {
+    const raw = localStorage.getItem(RUN_KEY);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  function writeActiveRun(r: ActiveRun) {
+    localStorage.setItem(RUN_KEY, JSON.stringify(r));
+  }
+  function clearActiveRun() {
+    localStorage.removeItem(RUN_KEY);
+  }
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
@@ -52,6 +128,62 @@ export default function App() {
     ta.style.height = "auto";
     ta.style.height = Math.min(ta.scrollHeight, 200) + "px";
   }, [input]);
+
+  async function consume(run: ActiveRun) {
+    const patchAsst = (fn: (m: Message) => Message) =>
+      setMessages((msgs) => msgs.map((m) => (m.id === run.asst_id ? fn(m) : m)));
+
+    try {
+      await openSSE({
+        url: STREAM_URL(run.run_id, run.offset),
+        method: "GET",
+        onEvent: (event, data, id) => {
+          if (id) run.offset = parseInt(id, 10);
+
+          if (event === "meta") {
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.thread_id) {
+                threadIdRef.current = parsed.thread_id;
+                localStorage.setItem(THREAD_KEY, parsed.thread_id);
+              }
+            } catch {}
+          } else if (event === "status") {
+            let s = data;
+            try { s = JSON.parse(data); } catch {}
+            patchAsst((m) => ({ ...m, status: s }));
+          } else if (event === "token") {
+            let chunk = "";
+            try { chunk = JSON.parse(data); } catch { chunk = data; }
+            patchAsst((m) => ({
+              ...m,
+              pending: false,
+              status: undefined,
+              text: m.text + chunk,
+              createdAt: m.text ? m.createdAt : Date.now(),
+            }));
+          } else if (event === "ui_event") {
+            try {
+              const parsed = JSON.parse(data) as UiEvent;
+              patchAsst((m) => ({ ...m, uiEvents: [...m.uiEvents, parsed] }));
+            } catch {}
+          } else if (event === "done") {
+            patchAsst((m) => ({ ...m, pending: false, status: undefined }));
+            clearActiveRun();
+          }
+
+          // Сохраняем offset на каждом событии, чтобы переподцепиться с него.
+          writeActiveRun(run);
+        },
+      });
+    } catch (e) {
+      patchAsst((m) => ({
+        ...m,
+        pending: false,
+        text: m.text || `Ошибка соединения: ${(e as Error).message}`,
+      }));
+    }
+  }
 
   async function send() {
     const text = input.trim();
@@ -78,58 +210,31 @@ export default function App() {
     };
     setMessages((m) => [...m, userMsg, asstMsg]);
 
-    const patchAsst = (fn: (m: Message) => Message) =>
-      setMessages((msgs) => msgs.map((m) => (m.id === asstId ? fn(m) : m)));
-
     try {
-      await streamSSE(
-        CHAT_URL,
-        { message: text, thread_id: threadIdRef.current },
-        (event, data) => {
-          if (event === "meta") {
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.thread_id) {
-                threadIdRef.current = parsed.thread_id;
-                localStorage.setItem(THREAD_KEY, parsed.thread_id);
-              }
-            } catch {}
-            return;
-          }
-          if (event === "status") {
-            let s = data;
-            try { s = JSON.parse(data); } catch {}
-            patchAsst((m) => ({ ...m, status: s }));
-          } else if (event === "token") {
-            let chunk = "";
-            try {
-              chunk = JSON.parse(data);
-            } catch {
-              chunk = data;
-            }
-            patchAsst((m) => ({
-              ...m,
-              pending: false,
-              status: undefined,
-              text: m.text + chunk,
-              createdAt: m.text ? m.createdAt : Date.now(),
-            }));
-          } else if (event === "ui_event") {
-            try {
-              const parsed = JSON.parse(data) as UiEvent;
-              patchAsst((m) => ({ ...m, uiEvents: [...m.uiEvents, parsed] }));
-            } catch {}
-          } else if (event === "done") {
-            patchAsst((m) => ({ ...m, pending: false }));
-          }
-        }
-      );
+      // Фаза 1: POST /chat — стартуем фоновый run, получаем run_id.
+      const r = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, thread_id: threadIdRef.current }),
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const { run_id, thread_id } = await r.json();
+      threadIdRef.current = thread_id;
+      localStorage.setItem(THREAD_KEY, thread_id);
+
+      const run: ActiveRun = { run_id, asst_id: asstId, offset: 0 };
+      writeActiveRun(run);
+
+      // Фаза 2: GET /stream/{run_id} — подписываемся, получаем события.
+      await consume(run);
     } catch (e) {
-      patchAsst((m) => ({
-        ...m,
-        pending: false,
-        text: m.text || `Ошибка: ${(e as Error).message}`,
-      }));
+      setMessages((msgs) =>
+        msgs.map((m) =>
+          m.id === asstId
+            ? { ...m, pending: false, text: m.text || `Ошибка: ${(e as Error).message}` }
+            : m
+        )
+      );
     } finally {
       setSending(false);
     }
@@ -155,6 +260,7 @@ export default function App() {
               } catch {}
             }
             localStorage.removeItem(THREAD_KEY);
+            clearActiveRun();
             threadIdRef.current = null;
             setMessages([]);
           }}
