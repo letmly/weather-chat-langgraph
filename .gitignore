@@ -1,5 +1,6 @@
 # env / secrets
 .env
+deploy/.deploy.env
 
 # python
 __pycache__/
