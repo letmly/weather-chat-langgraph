@@ -9,7 +9,7 @@ function bgForIcon(icon: string): string {
   const code = icon.slice(0, 2);
   const isNight = icon.endsWith("n");
   if (isNight) {
-    if (code === "01") return "from-slate-900 via-indigo-900 to-slate-950";
+    if (code === "01") return "from-indigo-800 via-slate-800 to-slate-950";
     if (code === "02" || code === "03" || code === "04")
       return "from-slate-800 via-slate-900 to-slate-950";
     if (code === "09" || code === "10") return "from-slate-900 via-blue-950 to-slate-950";
@@ -49,7 +49,7 @@ export function WeatherCard({ data }: { data: WeatherPayload }) {
           src={iconUrl}
           alt=""
           aria-hidden
-          className="pointer-events-none absolute -right-4 -top-4 h-32 w-32 opacity-70 sm:h-40 sm:w-40"
+          className="pointer-events-none absolute -right-4 -top-4 h-32 w-32 opacity-90 drop-shadow-[0_0_12px_rgba(255,255,255,0.35)] sm:h-40 sm:w-40"
         />
 
         <div className="relative flex items-start justify-between gap-2">
