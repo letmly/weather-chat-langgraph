@@ -68,7 +68,9 @@ async def chat(req: ChatRequest):
     logger.info("POST /chat thread=%s msg=%r", thread_id, req.message[:200])
 
     def sse(event: str, data) -> str:
-        payload = data if isinstance(data, str) else json.dumps(data, ensure_ascii=False)
+        # Всегда JSON-кодируем, иначе \n внутри токена (абзацы markdown,
+        # list items) ломает SSE-формат и теряется на клиенте.
+        payload = json.dumps(data, ensure_ascii=False)
         return f"event: {event}\ndata: {payload}\n\n"
 
     async def event_gen():
