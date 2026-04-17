@@ -277,19 +277,18 @@ function Bubble({ msg }: { msg: Message }) {
                 )}
               </AnimatePresence>
             </div>
-          ) : isUser ? (
-            // Время вклеено в конец текста через float — если строка короткая,
-            // встаёт справа от текста; если длинная — уходит под последнюю строку.
-            <div className="whitespace-pre-wrap">
-              {msg.text}
-              <span className="ml-2 inline-block translate-y-[3px] text-[10px] text-white/70">
-                {formatTime(msg.createdAt)}
-              </span>
-            </div>
           ) : (
             <>
-              <MarkdownBody text={msg.text} />
-              <div className="mt-0.5 text-right text-[10px] text-slate-500">
+              {isUser ? (
+                <div className="whitespace-pre-wrap">{msg.text}</div>
+              ) : (
+                <MarkdownBody text={msg.text} />
+              )}
+              <div
+                className={`mt-0.5 text-right text-[10px] ${
+                  isUser ? "text-white/70" : "text-slate-500"
+                }`}
+              >
                 {formatTime(msg.createdAt)}
               </div>
             </>
