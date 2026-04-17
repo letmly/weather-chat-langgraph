@@ -19,7 +19,7 @@ from langgraph.graph import StateGraph, END
 from langgraph.graph.message import add_messages
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
-from .weather import fetch_weather
+from .weather import fetch_weather, WeatherError
 
 DB_PATH = os.getenv("CHAT_DB_PATH", "chat.db")
 
@@ -46,7 +46,10 @@ async def get_weather(city: str) -> str:
         JSON-строка с полями: city, country, temp (°C), feels_like, condition,
         icon, humidity (%), wind (м/с).
     """
-    data = await fetch_weather(city)
+    try:
+        data = await fetch_weather(city)
+    except WeatherError as e:
+        return json.dumps({"error": str(e)}, ensure_ascii=False)
     return json.dumps(data, ensure_ascii=False)
 
 
@@ -159,7 +162,8 @@ def _build_graph(checkpointer):
 
 async def stream_chat(message: str, thread_id: str) -> AsyncIterator[dict]:
     """Стримит SSE-события:
-    - {type: "token", data: "..."} — кусочек текста ответа
+    - {type: "status",   data: "..."} — что сейчас делает агент (для UI)
+    - {type: "token",    data: "..."} — кусочек финального текста
     - {type: "ui_event", data: {...}} — structured UI payload (weather card)
     - {type: "done"}
     """
@@ -168,26 +172,30 @@ async def stream_chat(message: str, thread_id: str) -> AsyncIterator[dict]:
     config = {"configurable": {"thread_id": thread_id}}
     inputs = {"messages": [HumanMessage(content=message)]}
 
+    yield {"type": "status", "data": "думает"}
+
     async for event in graph.astream_events(inputs, config=config, version="v2"):
         kind = event["event"]
+        name = event.get("name")
 
-        if kind == "on_chat_model_stream":
-            chunk: AIMessageChunk = event["data"]["chunk"]
-            if chunk.content:
-                yield {"type": "token", "data": chunk.content}
-
-        elif kind == "on_tool_end" and event.get("name") == "get_weather":
+        if kind == "on_tool_end" and name == "get_weather":
             raw = event["data"].get("output")
             payload = raw.content if hasattr(raw, "content") else raw
             try:
                 parsed = json.loads(payload) if isinstance(payload, str) else payload
             except Exception:
                 parsed = {"raw": str(payload)}
+
             if "error" not in parsed:
                 yield {
                     "type": "ui_event",
                     "data": {"type": "weather_card", "payload": parsed},
                 }
+
+        elif kind == "on_chat_model_stream":
+            chunk: AIMessageChunk = event["data"]["chunk"]
+            if chunk.content:
+                yield {"type": "token", "data": chunk.content}
 
     yield {"type": "done"}
 

@@ -95,7 +95,11 @@ export default function App() {
             } catch {}
             return;
           }
-          if (event === "token") {
+          if (event === "status") {
+            let s = data;
+            try { s = JSON.parse(data); } catch {}
+            patchAsst((m) => ({ ...m, status: s }));
+          } else if (event === "token") {
             let chunk = "";
             try {
               chunk = JSON.parse(data);
@@ -105,6 +109,7 @@ export default function App() {
             patchAsst((m) => ({
               ...m,
               pending: false,
+              status: undefined,
               text: m.text + chunk,
               createdAt: m.text ? m.createdAt : Date.now(),
             }));
@@ -226,7 +231,10 @@ function Bubble({ msg }: { msg: Message }) {
           }
         >
           {msg.pending && !msg.text ? (
-            <TypingDots />
+            <div className="flex items-center gap-2 text-slate-400">
+              <TypingDots />
+              {msg.status && <span className="text-xs italic">{msg.status}…</span>}
+            </div>
           ) : isUser ? (
             <div className="whitespace-pre-wrap">{msg.text}</div>
           ) : (

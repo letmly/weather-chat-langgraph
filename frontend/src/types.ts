@@ -21,5 +21,6 @@ export type Message = {
   text: string;
   uiEvents: UiEvent[];
   pending?: boolean;
+  status?: string;
   createdAt: number;
 };

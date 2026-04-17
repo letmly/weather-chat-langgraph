@@ -43,32 +43,32 @@ export function WeatherCard({ data }: { data: WeatherPayload }) {
   return (
     <div className="mt-2 w-full max-w-md">
       <div
-        className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradient} p-5 text-white shadow-lg ring-1 ring-white/10`}
+        className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradient} p-4 text-white shadow-lg ring-1 ring-white/10 sm:p-5`}
       >
         <img
           src={iconUrl}
           alt=""
           aria-hidden
-          className="pointer-events-none absolute -right-4 -top-4 h-40 w-40 opacity-70"
+          className="pointer-events-none absolute -right-4 -top-4 h-32 w-32 opacity-70 sm:h-40 sm:w-40"
         />
 
-        <div className="relative flex items-start justify-between">
-          <div className="text-sm font-medium opacity-90">
+        <div className="relative flex items-start justify-between gap-2">
+          <div className="truncate text-sm font-medium opacity-90">
             {data.city}
             {data.country ? `, ${data.country}` : ""}
           </div>
-          {time && <div className="text-xs opacity-60">{time}</div>}
+          {time && <div className="shrink-0 text-xs opacity-60">{time}</div>}
         </div>
 
-        <div className="relative mt-12 flex items-end justify-between">
-          <div className="text-6xl font-light leading-none tracking-tight">
+        <div className="relative mt-10 flex items-end justify-between gap-3 sm:mt-12">
+          <div className="text-5xl font-light leading-none tracking-tight sm:text-6xl">
             {data.temp}°
           </div>
-          <div className="text-right">
-            <div className="text-base font-medium capitalize leading-tight">
+          <div className="min-w-0 text-right">
+            <div className="truncate text-sm font-medium capitalize leading-tight sm:text-base">
               {data.condition}
             </div>
-            <div className="text-xs opacity-70">Ощущается {data.feels_like}°</div>
+            <div className="text-[11px] opacity-70 sm:text-xs">Ощущается {data.feels_like}°</div>
           </div>
         </div>
       </div>
@@ -88,12 +88,12 @@ export function WeatherCard({ data }: { data: WeatherPayload }) {
 
 function Chip({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-white/[0.04] px-3 py-2 ring-1 ring-white/10">
-      <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-slate-400">
-        <span aria-hidden>{icon}</span>
-        <span>{label}</span>
+    <div className="min-w-0 rounded-xl bg-white/[0.04] px-2.5 py-2 ring-1 ring-white/10">
+      <div className="flex items-center gap-1 text-[10px] uppercase tracking-wide text-slate-400">
+        <span aria-hidden className="shrink-0">{icon}</span>
+        <span className="truncate">{label}</span>
       </div>
-      <div className="mt-0.5 text-sm font-medium text-slate-100">{value}</div>
+      <div className="mt-0.5 truncate text-sm font-medium text-slate-100">{value}</div>
     </div>
   );
 }
