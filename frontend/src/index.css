@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: #0f1014;
+  color: #e6e9ef;
+}
+
+/* --- кастомный скроллбар для области чата --- */
+.chat-scroll {
+  scrollbar-width: thin;                      /* Firefox */
+  scrollbar-color: rgba(255,255,255,0.12) transparent;
+}
+.chat-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.chat-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.08);
+  border-radius: 9999px;
+}
+.chat-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+/* --- минимальные стили для markdown в пузырях ассистента --- */
+.md-body > :first-child { margin-top: 0; }
+.md-body > :last-child  { margin-bottom: 0; }
+.md-body p              { margin: 0.25rem 0; }
+.md-body strong         { font-weight: 600; color: #fff; }
+.md-body em             { font-style: italic; }
+.md-body code {
+  background: rgba(255,255,255,0.08);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.md-body pre {
+  background: rgba(0,0,0,0.35);
+  padding: 0.6rem 0.75rem;
+  border-radius: 8px;
+  margin: 0.5rem 0;
+  overflow-x: auto;
+  font-size: 0.85em;
+  line-height: 1.4;
+}
+.md-body pre code { background: transparent; padding: 0; }
+.md-body ul, .md-body ol { margin: 0.25rem 0; padding-left: 1.25rem; }
+.md-body li             { margin: 0.1rem 0; }
+.md-body h1, .md-body h2, .md-body h3 {
+  font-weight: 600;
+  margin: 0.5rem 0 0.25rem;
+  line-height: 1.25;
+}
+.md-body h1 { font-size: 1.05rem; }
+.md-body h2 { font-size: 1.0rem; }
+.md-body h3 { font-size: 0.95rem; }
+.md-body a {
+  color: #7dd3fc;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.md-body blockquote {
+  border-left: 2px solid rgba(255,255,255,0.2);
+  padding-left: 0.6rem;
+  color: #cbd5e1;
+  margin: 0.35rem 0;
+}

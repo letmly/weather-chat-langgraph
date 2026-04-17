@@ -1,0 +1,25 @@
+# env / secrets
+.env
+
+# python
+__pycache__/
+*.pyc
+.venv/
+backend/chat.db
+backend/chat.db-shm
+backend/chat.db-wal
+backend/logs/
+backend/_debug_*.py
+
+# node
+node_modules/
+dist/
+frontend/_e2e.png
+frontend/_test-browser.mjs
+
+# editors
+.vscode/
+.idea/
+
+# misc
+_test*.json
