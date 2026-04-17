@@ -47,12 +47,12 @@ export function WeatherCard({ data }: { data: WeatherPayload }) {
       >
         <WeatherGlyph icon={data.icon} iconUrl={iconUrl} />
 
-        <div className="relative flex items-start justify-between gap-2">
-          <div className="truncate text-sm font-medium opacity-90">
+        <div className="relative">
+          <div className="truncate text-sm font-medium leading-tight opacity-90">
             {data.city}
             {data.country ? `, ${data.country}` : ""}
           </div>
-          {time && <div className="shrink-0 text-xs opacity-60">{time}</div>}
+          {time && <div className="mt-0.5 text-[11px] opacity-60">{time}</div>}
         </div>
 
         <div className="relative mt-10 flex items-end justify-between gap-3 sm:mt-12">

@@ -200,8 +200,13 @@ export default function App() {
           {sending ? (
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5 -translate-x-[1px]">
-              <path d="M3.4 20.4 20.85 12.92a1 1 0 0 0 0-1.84L3.4 3.6a1 1 0 0 0-1.38 1.2L4.5 11 12 12l-7.5 1-2.48 6.2a1 1 0 0 0 1.38 1.2Z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="h-5 w-5"
+            >
+              <path d="M3 20.5 21 12 3 3.5v7L14 12 3 13.5v7Z" />
             </svg>
           )}
         </button>
