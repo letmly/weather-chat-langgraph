@@ -5,8 +5,16 @@ import uuid
 from typing import Optional
 
 from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv()
+# Единый источник: корневой /task/.env. Раньше был дубликат backend/.env —
+# расходился с корневым. Ищем .env относительно этого файла: app/main.py →
+# /task/.env = parents[2].
+_ROOT_ENV = Path(__file__).resolve().parents[2] / ".env"
+if _ROOT_ENV.exists():
+    load_dotenv(_ROOT_ENV)
+else:
+    load_dotenv()  # fallback (например, в докере cwd=/app)
 
 os.makedirs("logs", exist_ok=True)
 _fmt = logging.Formatter("%(asctime)s %(levelname)s [%(name)s] %(message)s", "%H:%M:%S")
