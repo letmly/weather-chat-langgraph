@@ -58,11 +58,21 @@ class State(TypedDict):
 
 
 def _build_llm():
+    # OpenRouter умеет принимать список `models` — при 5xx/недоступности
+    # основной модели трафик автоматически перекидывается на следующую.
+    model = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+    fallbacks_raw = os.getenv("OPENROUTER_FALLBACK_MODELS", "")
+    fallbacks = [m.strip() for m in fallbacks_raw.split(",") if m.strip()]
+    extra: dict = {}
+    if fallbacks:
+        extra["models"] = fallbacks
+    logger.info("[llm] primary=%s fallbacks=%s", model, fallbacks or "-")
     return ChatOpenAI(
-        model=os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini"),
+        model=model,
         api_key=os.getenv("OPENROUTER_API_KEY"),
         base_url=os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
         temperature=0.3,
+        extra_body=extra or None,
     )
 
 
